@@ -1,0 +1,125 @@
+<Window x:Class="ProdutosApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Cadastro de Produtos"
+        Height="600" Width="980" MinHeight="520" MinWidth="820"
+        WindowStartupLocation="CenterScreen"
+        Background="#F4F6F8"
+        FontSize="13">
+
+    <Window.Resources>
+        <Style TargetType="TextBlock" x:Key="Rotulo">
+            <Setter Property="Margin" Value="0,8,0,2" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#333" />
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Style.Triggers>
+                <Trigger Property="IsReadOnly" Value="True">
+                    <Setter Property="Background" Value="#E9ECEF" />
+                    <Setter Property="Foreground" Value="#555" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Cabeçalho -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Text="Cadastro de Produtos" FontSize="22" FontWeight="Bold" Foreground="#1F3A5F" />
+            <TextBlock Text="WPF + ADO.NET + SQL Server LocalDB" Foreground="#666" />
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="290" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Formulário + menu de ações -->
+            <Border Grid.Column="0" Background="White" BorderBrush="#D0D7DE" BorderThickness="1"
+                    CornerRadius="6" Padding="12">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Rotulo}" Text="Id" Margin="0,0,0,2" />
+                        <TextBox x:Name="txtId" ToolTip="Digite um Id para buscar. Fica bloqueado ao editar um produto." />
+
+                        <TextBlock Style="{StaticResource Rotulo}" Text="Nome *" />
+                        <TextBox x:Name="txtNome" MaxLength="100" />
+
+                        <TextBlock Style="{StaticResource Rotulo}" Text="Preço (R$) *" />
+                        <TextBox x:Name="txtPreco" ToolTip="Use vírgula para os centavos. Ex.: 10,50" />
+
+                        <TextBlock Style="{StaticResource Rotulo}" Text="Estoque *" />
+                        <TextBox x:Name="txtEstoque" />
+
+                        <TextBlock Style="{StaticResource Rotulo}" Text="Categoria *" />
+                        <ComboBox x:Name="cmbCategoria" IsEditable="True"
+                                  ToolTip="Escolha uma categoria sugerida ou digite uma nova" />
+
+                        <Separator Margin="0,14,0,6" />
+
+                        <Button x:Name="btnInserir"   Content="1. Inserir produto"      Click="BtnInserir_Click" />
+                        <Button x:Name="btnListar"    Content="2. Listar produtos"      Click="BtnListar_Click" />
+                        <Button x:Name="btnBuscar"    Content="3. Buscar produto por ID" Click="BtnBuscar_Click" />
+                        <Button x:Name="btnAtualizar" Content="4. Atualizar produto"    Click="BtnAtualizar_Click" />
+                        <Button x:Name="btnExcluir"   Content="5. Excluir produto"      Click="BtnExcluir_Click" />
+                        <Button x:Name="btnLimpar"    Content="Limpar formulário"       Click="BtnLimpar_Click" />
+                        <Button x:Name="btnSair"      Content="6. Sair"                 Click="BtnSair_Click"
+                                Margin="0,12,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Lista de produtos -->
+            <DataGrid x:Name="dgProdutos" Grid.Column="2"
+                      AutoGenerateColumns="False" IsReadOnly="True"
+                      SelectionMode="Single" SelectionUnit="FullRow"
+                      CanUserAddRows="False" CanUserDeleteRows="False"
+                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      AlternatingRowBackground="#F7F9FB" Background="White"
+                      BorderBrush="#D0D7DE" RowHeight="28"
+                      SelectionChanged="DgProdutos_SelectionChanged">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Id" Binding="{Binding Id}" Width="60" />
+                    <DataGridTextColumn Header="Nome" Binding="{Binding Nome}" Width="*" />
+                    <DataGridTextColumn Header="Preço"
+                                        Binding="{Binding Preco, StringFormat=C, ConverterCulture=pt-BR}"
+                                        Width="110" />
+                    <DataGridTextColumn Header="Estoque" Binding="{Binding Estoque}" Width="80" />
+                    <DataGridTextColumn Header="Categoria" Binding="{Binding Categoria}" Width="140" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <!-- Barra de status -->
+        <Border Grid.Row="2" Margin="0,12,0,0" Padding="10,6" CornerRadius="4" x:Name="brdStatus"
+                Background="#E7F1FF">
+            <TextBlock x:Name="txtStatus" Text="Pronto." TextWrapping="Wrap" />
+        </Border>
+    </Grid>
+</Window>
