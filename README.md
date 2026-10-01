@@ -2,6 +2,16 @@
 
 Aplicação desktop em **C# / WPF (.NET 8)** para cadastrar e gerenciar produtos. O acesso a dados é feito com **ADO.NET puro** (`SqlConnection`, `SqlCommand`, `SqlDataReader`, `SqlTransaction`), sem Entity Framework nem Dapper, num banco **SQL Server LocalDB**.
 
+## Integrantes
+
+| Nome | RM |
+|---|---|
+| Rodrigo (completar nome) | RM00000 |
+
+## Apresentação
+
+Vídeo de demonstração (3 a 5 minutos): _adicionar o link aqui_
+
 ## Tecnologias
 
 | Tecnologia | Uso |
@@ -41,8 +51,8 @@ sqllocaldb info
 ### 1. Clonar o repositório
 
 ```bash
-git clone <url-do-repositorio>
-cd ProdutosApp
+git clone https://github.com/roji-menez/CP5-C-.git
+cd CP5-C-
 ```
 
 ### 2. Criar o banco de dados
@@ -91,7 +101,7 @@ Os testes de integração usam o mesmo LocalDB e executam o `script.sql` automat
 ## Estrutura de pastas
 
 ```
-ProdutosApp/                         (raiz do repositório)
+CP5-C-/                              (raiz do repositório)
 ├── ProdutosApp.sln                  solução com os dois projetos
 ├── ProdutosApp/                     aplicação WPF
 │   ├── Models/Produto.cs            entidade Produto (espelho da tabela)
@@ -120,11 +130,12 @@ ProdutosApp/                         (raiz do repositório)
 
 ### Prevenção de SQL Injection
 
-Todos os comandos usam **parâmetros** (`SqlParameter`) com tipo explícito. Nenhum valor digitado pelo usuário é concatenado ou interpolado no texto SQL:
+Todos os comandos usam **parâmetros** (`SqlParameter`) com tipo explícito. Nenhum valor é concatenado ou interpolado no texto SQL, nem mesmo os valores fixos da coluna `Ativo`:
 
 ```csharp
-const string sql = "SELECT Id, Nome, Preco, Estoque, Categoria, Ativo FROM dbo.Produtos WHERE Id = @Id AND Ativo = 1;";
+const string sql = "SELECT Id, Nome, Preco, Estoque, Categoria, Ativo FROM dbo.Produtos WHERE Id = @Id AND Ativo = @Ativo;";
 comando.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+comando.Parameters.Add("@Ativo", SqlDbType.Bit).Value = true;
 ```
 
 O SQL Server recebe o comando e os valores **separadamente**, então um texto como `'; DROP TABLE Produtos; --` é tratado apenas como um dado e é gravado literalmente na coluna `Nome`. O teste `Inserir_TentativaDeSqlInjectionNoNome_EhGravadaComoTextoComum` comprova isso: o nome é gravado exatamente como foi digitado e a tabela continua existindo.
@@ -152,14 +163,22 @@ O `INSERT` e o `SET @NovoId = CAST(SCOPE_IDENTITY() AS INT)` são enviados **no 
 
 ### Log
 
-A classe `Logger` grava em `logs/operacoes.log`, na pasta do executável (ex.: `ProdutosApp/bin/Debug/net8.0-windows/logs/operacoes.log`). A pasta é criada se não existir. Exemplo:
+A classe `Logger` grava em `logs/operacoes.log`, na pasta do executável (ex.: `ProdutosApp/bin/Debug/net8.0-windows/logs/operacoes.log`). A pasta é criada se não existir. Trecho real do log da sessão em que os prints abaixo foram tirados:
 
 ```
-[2026-09-29 20:08:42] [INFO] INICIAR - Aplicação iniciada
-[2026-09-29 20:08:43] [INFO] LISTAR - 5 produto(s) ativo(s) listado(s)
-[2026-09-29 20:09:10] [INFO] INSERIR - Produto Id 6 'Webcam Full HD' inserido
-[2026-09-29 20:09:31] [ERRO] LISTAR - Falha ao abrir a conexão com o banco (erro SQL -1983577849) | SqlException: ...
+[2026-09-30 22:01:18] [INFO] INICIAR - Aplicação iniciada
+[2026-09-30 22:01:18] [INFO] LISTAR - 5 produto(s) ativo(s) listado(s)
+[2026-09-30 22:01:21] [INFO] INSERIR - Produto Id 6 'Webcam Full HD' inserido
+[2026-09-30 22:01:24] [INFO] LISTAR - 6 produto(s) ativo(s) listado(s)
+[2026-09-30 22:01:26] [INFO] BUSCAR - Produto Id 3 'Monitor 24 polegadas' encontrado
+[2026-09-30 22:01:28] [INFO] ATUALIZAR - Produto Id 3 'Monitor 24 polegadas' atualizado
+[2026-09-30 22:01:31] [INFO] BUSCAR - Produto Id 6 'Webcam Full HD' encontrado
+[2026-09-30 22:01:32] [INFO] EXCLUIR - Produto Id 6 excluído (soft delete) - transação confirmada
+[2026-09-30 22:01:35] [INFO] SAIR - Aplicação encerrada
 ```
+
+Erros são gravados com o nível `[ERRO]`, o número do erro SQL e a mensagem da exceção, por exemplo:
+`[ERRO] LISTAR - Falha ao abrir a conexão com o banco (erro SQL -1983577849) | SqlException: ...`
 
 O `Logger` é **thread-safe** (`lock`) e nunca derruba a aplicação: se não conseguir gravar, o erro é ignorado (apenas escrito na saída de depuração).
 
@@ -177,9 +196,28 @@ O `UPDATE ... SET Ativo = 0` é executado dentro de uma **`SqlTransaction`**:
 
 As imagens ficam na pasta [`prints/`](prints/).
 
-| Operação | Imagem |
-|---|---|
-| Inserir produto | ![Inserir](prints/inserir.png) |
-| Listar produtos | ![Listar](prints/listar.png) |
-| Atualizar produto | ![Atualizar](prints/atualizar.png) |
-| Excluir produto | ![Excluir](prints/excluir.png) |
+### 1. Inserir produto
+"Webcam Full HD" inserido; o banco gerou o Id 6 e a lista foi recarregada.
+
+![Inserir](prints/inserir.png)
+
+### 2. Listar produtos
+
+![Listar](prints/listar.png)
+
+### 3. Buscar produto por ID
+Busca do Id 3: o formulário é preenchido e o Id fica bloqueado para edição.
+
+![Buscar](prints/buscar.png)
+
+### 4. Atualizar produto
+Preço do Id 3 alterado de R$ 899,00 para R$ 849,90 e estoque de 8 para 10.
+
+![Atualizar](prints/atualizar.png)
+
+### 5. Excluir produto
+Confirmação antes da exclusão e, em seguida, o produto some da lista (soft delete com transação).
+
+![Confirmação de exclusão](prints/excluir-confirmacao.png)
+
+![Excluir](prints/excluir.png)

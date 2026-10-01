@@ -49,7 +49,7 @@ public class ProdutoRepository : IProdutoRepository
         //    permitido em tabelas com triggers sem a cláusula INTO.
         const string sql = @"
 INSERT INTO dbo.Produtos (Nome, Preco, Estoque, Categoria, Ativo)
-VALUES (@Nome, @Preco, @Estoque, @Categoria, 1);
+VALUES (@Nome, @Preco, @Estoque, @Categoria, @Ativo);
 SET @NovoId = CAST(SCOPE_IDENTITY() AS INT);";
 
         try
@@ -58,6 +58,7 @@ SET @NovoId = CAST(SCOPE_IDENTITY() AS INT);";
             using var comando = new SqlCommand(sql, conexao);
 
             AdicionarParametrosDoProduto(comando, produto);
+            AdicionarParametroBit(comando, "@Ativo", true);
             SqlParameter parametroNovoId = comando.Parameters.Add("@NovoId", SqlDbType.Int);
             parametroNovoId.Direction = ParameterDirection.Output;
 
@@ -78,12 +79,13 @@ SET @NovoId = CAST(SCOPE_IDENTITY() AS INT);";
 
     public List<Produto> Listar()
     {
-        const string sql = "SELECT Id, Nome, Preco, Estoque, Categoria, Ativo FROM dbo.Produtos WHERE Ativo = 1 ORDER BY Id;";
+        const string sql = "SELECT Id, Nome, Preco, Estoque, Categoria, Ativo FROM dbo.Produtos WHERE Ativo = @Ativo ORDER BY Id;";
 
         try
         {
             using SqlConnection conexao = AbrirConexao("LISTAR");
             using var comando = new SqlCommand(sql, conexao);
+            AdicionarParametroBit(comando, "@Ativo", true);
 
             using SqlDataReader reader = comando.ExecuteReader();
 
@@ -104,13 +106,14 @@ SET @NovoId = CAST(SCOPE_IDENTITY() AS INT);";
 
     public Produto? BuscarPorId(int id)
     {
-        const string sql = "SELECT Id, Nome, Preco, Estoque, Categoria, Ativo FROM dbo.Produtos WHERE Id = @Id AND Ativo = 1;";
+        const string sql = "SELECT Id, Nome, Preco, Estoque, Categoria, Ativo FROM dbo.Produtos WHERE Id = @Id AND Ativo = @Ativo;";
 
         try
         {
             using SqlConnection conexao = AbrirConexao("BUSCAR");
             using var comando = new SqlCommand(sql, conexao);
             comando.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+            AdicionarParametroBit(comando, "@Ativo", true);
 
             using SqlDataReader reader = comando.ExecuteReader();
 
@@ -141,7 +144,7 @@ UPDATE dbo.Produtos
        Estoque = @Estoque,
        Categoria = @Categoria
  WHERE Id = @Id
-   AND Ativo = 1;";
+   AND Ativo = @Ativo;";
 
         try
         {
@@ -150,6 +153,7 @@ UPDATE dbo.Produtos
 
             AdicionarParametrosDoProduto(comando, produto);
             comando.Parameters.Add("@Id", SqlDbType.Int).Value = produto.Id;
+            AdicionarParametroBit(comando, "@Ativo", true);
 
             int linhasAfetadas = comando.ExecuteNonQuery();
             bool atualizado = linhasAfetadas == 1;
@@ -177,7 +181,7 @@ UPDATE dbo.Produtos
         // A transação garante que a exclusão só é confirmada (Commit) se exatamente 1 linha foi afetada;
         // caso contrário, ou em caso de erro, tudo é desfeito (Rollback). Também deixa o método pronto
         // para incluir outros comandos atômicos no futuro (ex.: gravar um histórico de exclusões).
-        const string sql = "UPDATE dbo.Produtos SET Ativo = 0 WHERE Id = @Id AND Ativo = 1;";
+        const string sql = "UPDATE dbo.Produtos SET Ativo = @NovoAtivo WHERE Id = @Id AND Ativo = @Ativo;";
 
         try
         {
@@ -187,6 +191,8 @@ UPDATE dbo.Produtos
             {
                 using var comando = new SqlCommand(sql, conexao, transacao);
                 comando.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+                AdicionarParametroBit(comando, "@NovoAtivo", false);
+                AdicionarParametroBit(comando, "@Ativo", true);
 
                 int linhasAfetadas = comando.ExecuteNonQuery();
 
@@ -252,6 +258,14 @@ UPDATE dbo.Produtos
 
         comando.Parameters.Add("@Estoque", SqlDbType.Int).Value = produto.Estoque;
         comando.Parameters.Add("@Categoria", SqlDbType.NVarChar).Value = produto.Categoria;
+    }
+
+    /// <summary>
+    /// Parâmetro do tipo BIT (usado para a coluna Ativo). Assim nenhum valor fica fixo no texto do SQL.
+    /// </summary>
+    private static void AdicionarParametroBit(SqlCommand comando, string nome, bool valor)
+    {
+        comando.Parameters.Add(nome, SqlDbType.Bit).Value = valor;
     }
 
     private static void DesfazerTransacao(SqlTransaction transacao, int id)
