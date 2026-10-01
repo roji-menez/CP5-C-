@@ -2,15 +2,21 @@
 
 Aplicação desktop em **C# / WPF (.NET 8)** para cadastrar e gerenciar produtos. O acesso a dados é feito com **ADO.NET puro** (`SqlConnection`, `SqlCommand`, `SqlDataReader`, `SqlTransaction`), sem Entity Framework nem Dapper, num banco **SQL Server LocalDB**.
 
-## Integrantes
+## Integrante
 
 | Nome | RM |
 |---|---|
-| Rodrigo (completar nome) | RM00000 |
+| Rodrigo Jimenez | RM558148 |
 
-## Apresentação
+## Bônus implementados
 
-Vídeo de demonstração (3 a 5 minutos): _adicionar o link aqui_
+| Bônus | Onde |
+|---|---|
+| **Testes unitários** | `ProdutosApp.Tests/`: 43 testes xUnit (validação sem banco + integração do `ProdutoRepository` com o LocalDB, incluindo tentativa de SQL Injection) |
+| **Transação** | `ProdutoRepository.Excluir` usa `SqlTransaction` com `Commit`/`Rollback` |
+| **Soft delete** | coluna `Ativo`: a exclusão marca `Ativo = 0` e o registro continua no banco |
+
+Detalhes em [Transação e soft delete](#transação-e-soft-delete) e em [Rodar os testes](#5-rodar-os-testes).
 
 ## Tecnologias
 
